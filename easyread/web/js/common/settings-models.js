@@ -1,9 +1,10 @@
-/* Claude Code / Codex 的模型下拉框，“翻译”和“问 AI”两页共用（API 的表单在 settings-api.js）。
-   名单来自 /api/engines 的 models（后端 cli_models.py）：Codex 就是它 /model 里列的那些；Claude 的别名带上实际版本。 */
+/* Claude Code / Codex / Command Code 的模型下拉框，“翻译”和“问 AI”两页共用（API 的表单在 settings-api.js）。
+   名单来自 /api/engines 的 models（后端 cli_models.py）：Codex 就是它 /model 里列的那些；Claude 的别名带上实际版本；
+   Command Code 来自 cmdc --list-models。 */
 (function (PR) {
   "use strict";
   const FALLBACK = { claude: { models: [{ id: "opus", name: "Opus", desc: "最强" }, { id: "sonnet", name: "Sonnet", desc: "快、省" }, { id: "haiku", name: "Haiku", desc: "最快最省" }] },
-    codex: { default: "", models: [] } };
+    codex: { default: "", models: [] }, cmdc: { default: "", models: [] } };
   const lists = (s) => (s.models || FALLBACK);
 
   /* 下拉框的选项：[[value, label]]。withDefault：最前面加一项“跟随 CLI 默认” */
@@ -16,7 +17,8 @@
     } else {
       opts = L.models.map((m) => [m.id, m.name]);
       const dn = (L.models.find((m) => m.id === L.default) || {}).name || L.default;
-      if (withDefault || !opts.length) opts.unshift(["", "跟随 Codex 默认" + (dn ? "（" + dn + "）" : "")]);
+      const def = engine === "cmdc" ? "跟随 Command Code 默认" : "跟随 Codex 默认";
+      if (withDefault || !opts.length) opts.unshift(["", def + (dn ? "（" + dn + "）" : "")]);
     }
     if (value && !opts.some(([v]) => v === value)) opts.push([value, value]);
     return opts;

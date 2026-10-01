@@ -125,7 +125,7 @@ def prompt(ws: Workspace, messages: list[dict], anchor: str | None, quote: str, 
     convo = "\n\n".join(("读者" if m["role"] == "user" else "你") + "：" + m["content"] for m in history[:-1])
     ask = history[-1]["content"] if history else ""
     tool = ("需要看全文时，用 Read 工具读当前目录的 paper.json（blocks 里是译文和原文）；读者的全部标记在 reader.json 的 notes 里。\n"
-            if engine == "claude" else "")
+            if engine in ("claude", "cmdc") else "")
     want, colors = wants_marks(ask)
     marks = _marks(ws, colors) if want else _marks_summary(ws)
     return ("你在陪读者读一篇学术论文，回答他边读边冒出来的问题。用中文，直接、具体，能举例就举例；"
@@ -149,7 +149,7 @@ def stream(ecfg: dict, text: str, cwd: Path, cancel: threading.Event, on_model=N
             yield from _stream_claude(ecfg["claude"], text, cwd, cancel, on_model)
         elif e == "openai":
             yield from openai_api.stream(ecfg["openai"], text, cancel)
-        else:  # codex 没有逐字输出，整段给
+        else:  # codex / cmdc 没有逐字输出，整段给
             yield engines.run(ecfg, text, cwd, None, cancel)
     except engines.EngineError as err:
         raise engines.EngineError(netcheck.explain(ecfg, str(err))) from None

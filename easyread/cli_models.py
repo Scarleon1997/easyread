@@ -1,7 +1,8 @@
-"""Claude Code / Codex CLI 能选哪些模型，给设置页的下拉框用。
+"""Claude Code / Codex CLI / Command Code 能选哪些模型，给设置页的下拉框用。
 
 - Codex：读 ~/.codex/models_cache.json（Codex 自己从服务端拉的名单），只要 /model 里列出来的那些，按它的顺序；
   默认模型是 ~/.codex/config.toml 里的 model。
+- Command Code：跑 cmdc --list-models，解析出名单（标 (default) 的是默认模型），缓存 10 分钟。
 - Claude：opus / sonnet / haiku 是 Claude Code 的别名，会用它支持的最新版；
   实际是哪个版本记在 .models-seen.json（见 chat_models.remember）：每次回答时记一次；
   另外 probe_claude() 在服务启动时把还没记过的别名查一遍（Claude Code 升级后重查），名单里一开始就有版本号。
@@ -10,8 +11,11 @@
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 from . import chat_models, engines
@@ -52,6 +56,37 @@ def claude() -> dict:
                        for a, n, d in CLAUDE_ALIASES]}
 
 
+_CMDC_CACHE: dict = {"at": 0.0, "data": {"default": "", "models": []}}
+_CMDC_LINE = re.compile(r"^(\S+)\s{2,}(\S.*)$")
+
+
+def cmdc(c: dict | None = None) -> dict:
+    """{"default": slug, "models": [{"id", "name", "desc"}]}：cmdc --list-models 的名单，缓存 10 分钟；没装就是空名单。"""
+    if time.time() - _CMDC_CACHE["at"] < 600:
+        return _CMDC_CACHE["data"]
+    out: dict = {"default": "", "models": []}
+    exe = engines.cmdc_path(c or {})
+    if exe:
+        try:
+            r = subprocess.run([exe, "--list-models"], capture_output=True, text=True, timeout=20, stdin=subprocess.DEVNULL,
+                               encoding="utf-8", errors="replace", creationflags=engines._NO_WINDOW)
+            for line in (r.stdout or "").splitlines():
+                if line.startswith(("Pass the full id", "Docs:")):  # 名单后面的用法说明
+                    break
+                m = _CMDC_LINE.match(line)
+                if not m or m.group(1) == "Available":  # “Available models  ·  N models” 标题行
+                    continue
+                desc = m.group(2)
+                if desc.endswith("(default)"):
+                    out["default"] = m.group(1)
+                    desc = desc[:-len("(default)")].rstrip()
+                out["models"].append({"id": m.group(1), "name": m.group(1), "desc": desc})
+        except (OSError, subprocess.SubprocessError):  # 超时或跑不起来：当作没装，名单为空
+            log.info("cmdc --list-models 失败", exc_info=True)
+    _CMDC_CACHE.update(at=time.time(), data=out)
+    return out
+
+
 def probe_claude(c: dict, version: str) -> None:
     """让 Claude Code 报一下 opus / sonnet / haiku 现在各指向哪个版本。
     它启动时第一行（init 事件）就带着实际模型名，这时还没发请求；读到就结束进程，不花 token。"""
@@ -90,5 +125,5 @@ def _probe(exe: str, version: str) -> None:
     chat_models.remember("_claude_version", version)
 
 
-def listing() -> dict:
-    return {"claude": claude(), "codex": codex()}
+def listing(cfg: dict | None = None) -> dict:
+    return {"claude": claude(), "codex": codex(), "cmdc": cmdc((cfg or {}).get("cmdc"))}

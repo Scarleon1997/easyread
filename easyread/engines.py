@@ -2,6 +2,7 @@
 
 - claude：本机的 Claude Code 无头模式（claude -p），用你已有的登录，不需要 Key；能自己读原页图核对公式和表格。
 - codex：本机的 Codex CLI（codex exec），同样用已有登录，原页图作为附件发过去。
+- cmdc：本机的 Command Code 无头模式（cmdc -p），用你已有的登录，不需要 Key；和 claude 一样自己读原页图。
 - openai：任何 OpenAI 兼容接口（Ollama、智谱、硅基流动、DeepSeek、Gemini……），在设置里填地址、模型和 Key；
   Chat Completions 和 Responses 两种格式都行（见 openai_api.py）。
 """
@@ -27,7 +28,7 @@ class Cancelled(RuntimeError):
     pass
 
 
-ENGINE_NAMES = {"claude": "Claude Code", "codex": "Codex CLI", "openai": "API", "none": "不翻译"}
+ENGINE_NAMES = {"claude": "Claude Code", "codex": "Codex CLI", "cmdc": "Command Code", "openai": "API", "none": "不翻译"}
 
 
 def run(cfg: dict, prompt: str, cwd: Path, images: list[Path] | None = None, cancel: threading.Event | None = None) -> str:
@@ -46,15 +47,17 @@ def _run(cfg: dict, prompt: str, cwd: Path, images: list[Path] | None, cancel: t
         return run_claude(cfg["claude"], prompt, cwd, cancel)
     if engine == "codex":
         return run_codex(cfg["codex"], prompt, cwd, images or [], cancel)
+    if engine == "cmdc":
+        return run_cmdc(cfg["cmdc"], prompt, cwd, cancel)
     if engine == "openai":
         return run_openai(cfg["openai"], prompt, images or [], cancel)
     raise EngineError("没有配置翻译引擎（设置 → 翻译引擎）")
 
 
 def image_mode(cfg: dict) -> str:
-    """提示词里怎么说原页图：claude 自己用 Read 读；codex 和能看图的接口作为附件；其余没有图。"""
+    """提示词里怎么说原页图：claude / cmdc 自己用 Read 读；codex 和能看图的接口作为附件；其余没有图。"""
     engine = cfg.get("engine")
-    if engine == "claude":
+    if engine in ("claude", "cmdc"):
         return "claude"
     if engine == "codex" or (engine == "openai" and cfg["openai"].get("vision")):
         return "attached"
@@ -65,7 +68,7 @@ def who(cfg: dict) -> str:
     engine = cfg.get("engine")
     if engine == "openai":
         return cfg["openai"].get("model") or "API"
-    return {"claude": "claude", "codex": "codex"}.get(engine, "")
+    return {"claude": "claude", "codex": "codex", "cmdc": "cmdc"}.get(engine, "")
 
 
 # ---------- 本机 CLI ----------
@@ -80,6 +83,10 @@ def claude_path(c: dict) -> str | None:
 
 def codex_path(c: dict) -> str | None:
     return shutil.which(c.get("command") or "codex")
+
+
+def cmdc_path(c: dict) -> str | None:
+    return shutil.which(c.get("command") or "cmdc")
 
 
 def _popen(args: list[str], cwd: Path):
@@ -129,6 +136,37 @@ def run_codex(c: dict, prompt: str, cwd: Path, images: list[Path], cancel=None) 
     if not text:
         raise EngineError("Codex 没有给出结果：" + (out or "")[-300:])
     return text
+
+
+def run_cmdc(c: dict, prompt: str, cwd: Path, cancel=None) -> str:
+    exe = cmdc_path(c)
+    if not exe:
+        raise EngineError(f"找不到 Command Code 命令：{c.get('command') or 'cmdc'}（先装好并登录 Command Code）")
+    args = [exe, "-p", "--output-format", "json", "--skip-onboarding"]
+    if c.get("model"):
+        args += ["--model", c["model"]]
+    args += list(c.get("extra_args") or [])
+    out = _communicate(_popen(args, cwd), prompt, int(c.get("timeout") or 1200), cancel)
+    res = None
+    for line in out.splitlines():  # NDJSON 事件流，最后一行才是结果
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if obj.get("type") == "result":
+                res = obj
+    if res is None:
+        raise EngineError(f"Command Code 输出里没有结果行：{out[:300]}")
+    if res.get("subtype") != "success":
+        msg = str(res.get("error") or res.get("subtype") or "")
+        if "max_turns" in (res.get("subtype") or "") or "turn" in msg.lower():
+            msg += "（对话轮数到上限了，在 config.json 的 cmdc.extra_args 里加 --max-turns 500 再试）"
+        elif "credit" in msg.lower() or "limit" in msg.lower():
+            msg += "（额度用完了，等恢复后点“重试”，或在设置里换个引擎）"
+        raise EngineError(f"Command Code 出错：{msg}")
+    return res.get("finalText") or ""
 
 
 def _communicate(proc, stdin_text: str, timeout: int, cancel) -> str:
@@ -197,8 +235,8 @@ def _version(exe: str) -> str:
 def test(cfg: dict) -> dict:
     """设置页“测试”按钮：真的让模型回一句，确认引擎能用。"""
     engine = cfg.get("engine")
-    if engine in ("claude", "codex"):
-        exe = (claude_path if engine == "claude" else codex_path)(cfg[engine])
+    if engine in ("claude", "codex", "cmdc"):
+        exe = {"claude": claude_path, "codex": codex_path, "cmdc": cmdc_path}[engine](cfg[engine])
         if not exe:
             return {"ok": False, "message": f"找不到 {engine} 命令，先安装并登录"}
     if engine == "none":

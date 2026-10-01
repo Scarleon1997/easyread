@@ -45,7 +45,7 @@ def prompt(ws: Workspace, mode: str, note: str, engine: str) -> str:
     meta = ws.load("paper").get("meta", {})
     title = meta.get("title_zh") or meta.get("title_en") or ""
     paper = ("论文全文在当前目录的 paper.json 里（blocks 里是译文和原文），需要核对时用 Read 工具去读。"
-             if engine == "claude" else "论文译文（节选）：\n" + _paper_text(ws))
+             if engine in ("claude", "cmdc") else "论文译文（节选）：\n" + _paper_text(ws))
     return (f"你在帮读者整理读论文《{title}》的笔记。用中文。{ASK[mode]}\n\n{paper}\n\n"
             + (f"读者的笔记：\n<<<\n{note}\n>>>" if note.strip() else ""))
 

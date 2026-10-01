@@ -1,6 +1,6 @@
 """“问 AI”用哪些模型：设置里一张短名单（默认 Claude Opus 5.5、Claude Sonnet 5.5、GPT），可以增删改。
 
-每一项：{"id", "name", "engine": "claude" | "codex" | "openai", "model", "preset"（API 服务商）, "base_url"（自定义地址时）,
+每一项：{"id", "name", "engine": "claude" | "codex" | "cmdc" | "openai", "model", "preset"（API 服务商）, "base_url"（自定义地址时）,
          "api"（chat | responses，不填跟服务商默认）}
 API 的 Key 用翻译引擎那边按服务商存的同一份（openai.keys），不用填两次。
 """
@@ -86,7 +86,7 @@ def engine_cfg(cfg: dict, mid: str | None) -> tuple[dict, dict]:
     m = find(cfg, mid)
     out = copy.deepcopy(cfg)
     out["engine"] = m["engine"]
-    if m["engine"] in ("claude", "codex"):
+    if m["engine"] in ("claude", "codex", "cmdc"):
         out[m["engine"]]["model"] = m.get("model") or ""
     elif m["engine"] == "openai":
         p = next((x for x in PRESETS if x["id"] == m.get("preset")), None)
@@ -117,9 +117,9 @@ def listing(cfg: dict) -> dict:
     out = []
     for m in models(cfg):
         e = m.get("engine")
-        if e in ("claude", "codex"):
+        if e in ("claude", "codex", "cmdc"):
             ready = bool(found.get(e, {}).get("found"))
-            source = "Claude Code" if e == "claude" else "Codex CLI"
+            source = {"claude": "Claude Code", "codex": "Codex CLI", "cmdc": "Command Code"}[e]
             hint = "" if ready else f"本机没找到 {source}"
         else:
             p = next((x for x in PRESETS if x["id"] == m.get("preset")), None)
@@ -128,7 +128,8 @@ def listing(cfg: dict) -> dict:
             hint = "" if ready else f"还没填 {source} 的 Key（设置 → 问 AI → 改）"
         out.append({**m, "label": label(m), "source": source, "ready": ready, "hint": hint,
                     "detail": (actual_of(m.get("model", "")) or m.get("model")) if e == "claude"
-                    else m.get("model") or ((codex_default_model() + "（跟随 Codex 默认）") if e == "codex" and codex_default_model() else "")})
+                    else m.get("model") or ((codex_default_model() + "（跟随 Codex 默认）") if e == "codex" and codex_default_model()
+                                            else "（跟随 Command Code 默认）" if e == "cmdc" else "")})
     default = (cfg.get("chat") or {}).get("default") or (out[0]["id"] if out else "")
     return {"models": out, "default": default, "presets": [{"id": p["id"], "name": p["name"], "models": p.get("models", []), "api": p.get("api", "chat")} for p in PRESETS]}
 
@@ -138,7 +139,7 @@ def sanitize(items: list[dict]) -> list[dict]:
     out, seen = [], set()
     for k, m in enumerate(items or []):
         e = m.get("engine")
-        if e not in ("claude", "codex", "openai") or (e == "openai" and not (m.get("preset") or m.get("base_url"))):
+        if e not in ("claude", "codex", "cmdc", "openai") or (e == "openai" and not (m.get("preset") or m.get("base_url"))):
             continue
         mid = re.sub(r"[^\w\-]", "-", str(m.get("id") or f"m{k}"))[:40] or f"m{k}"
         while mid in seen:

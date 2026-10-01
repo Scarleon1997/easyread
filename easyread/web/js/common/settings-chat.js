@@ -19,7 +19,7 @@
         '<button class="mc-more" data-cm="more" data-i="' + i + '" title="改、删">' + PR.icon("more", "sm") + "</button>" +
         "<b>" + PR.esc(m.label || m.name) + "</b>" + PR.esc([m.source, m.detail].filter(Boolean).join(" · ")) + badge + "</div>";
     }).join("") +
-      '<div class="mc add' + (s.editing === "new" ? " editing" : "") + '" data-cm="add" role="button" tabindex="0">' + PR.icon("plus") + "<b>添加模型</b>Claude、GPT，或各家 API</div></div>";
+      '<div class="mc add' + (s.editing === "new" ? " editing" : "") + '" data-cm="add" role="button" tabindex="0">' + PR.icon("plus") + "<b>添加模型</b>Claude、GPT、Command Code，或各家 API</div></div>";
   }
 
   function formHtml(s) {
@@ -28,10 +28,12 @@
     let h = '<div class="mc-form"><h4 class="set-h">' + (s.editing === "new" ? "添加一个模型" : "修改“" + PR.esc(f.name || autoName(s, f)) + "”") + "</h4>" +
       '<div class="engine-cards small">' +
       card("claude", "Claude Code", "本机已登录的 Claude") + card("codex", "Codex CLI", "本机已登录的 ChatGPT") +
+      card("cmdc", "Command Code", "本机已登录的 Command Code") +
       card("api", "API 接口", "DeepSeek、智谱、Ollama、自定义地址等") + "</div>";
-    if (f.kind === "claude" || f.kind === "codex") {
-      h += '<label class="field"><span>模型</span>' + PR.cliModelSelect(s, f.kind, f.model, 'id="cmModel"', f.kind === "codex") + "</label>" +
+    if (f.kind === "claude" || f.kind === "codex" || f.kind === "cmdc") {
+      h += '<label class="field"><span>模型</span>' + PR.cliModelSelect(s, f.kind, f.model, 'id="cmModel"', f.kind !== "claude") + "</label>" +
         '<p class="hint">' + (f.kind === "claude" ? "Opus / Sonnet 自动用 Claude Code 支持的最新版；新模型出来后运行 <code>claude update</code>。"
+          : f.kind === "cmdc" ? "名单来自 <code>cmdc --list-models</code>；留空跟随 Command Code 默认。"
           : (PR.cliModelDesc(s, "codex", f.model) ? PR.esc(PR.cliModelDesc(s, "codex", f.model)) + "<br>" : "") + "名单和 Codex 里 <code>/model</code> 看到的一样。") + "</p>";
     } else {
       h += PR.apiForm.html(s, f, { keyProp: "key", vision: false });
@@ -41,9 +43,9 @@
       '<button class="btn sm" data-cm="cancel">取消</button><button class="btn sm accent" data-cm="ok">' + (s.editing === "new" ? "加进名单" : "改好了") + "</button></div></div>";
   }
   function autoName(s, f) {
-    if (f.kind === "claude" || f.kind === "codex") {
-      const o = PR.cliModelOptions(s, f.kind, f.model, f.kind === "codex").find(([v]) => v === (f.model || ""));
-      if (!o) return f.kind === "claude" ? "Claude" : "GPT";
+    if (f.kind === "claude" || f.kind === "codex" || f.kind === "cmdc") {
+      const o = PR.cliModelOptions(s, f.kind, f.model, f.kind !== "claude").find(([v]) => v === (f.model || ""));
+      if (!o) return f.kind === "claude" ? "Claude" : f.kind === "cmdc" ? "Command Code" : "GPT";
       const inner = o[1].match(/^跟随.*（(.+)）$/);  // “跟随 Codex 默认（GPT-6-Astra）”→ GPT-6-Astra
       return inner ? inner[1] : o[1].replace(/（.*$/, "");
     }
@@ -132,7 +134,8 @@
         const name = f.name || autoName(s, f);
         const m = { engine: api ? "openai" : f.kind, preset: api ? f.preset : "",
           base_url: api && (!p || f.base_url !== p.base_url) ? f.base_url : "", api: api && (!p || f.api !== (p.api || "chat")) ? f.api : "", model: f.model, name, label: name,
-          source: api ? (p ? p.name : "自定义地址") : f.kind === "claude" ? "Claude Code" : "Codex CLI", detail: f.model || "跟随 Codex 默认", ready: true };
+          source: api ? (p ? p.name : "自定义地址") : ({ claude: "Claude Code", codex: "Codex CLI", cmdc: "Command Code" }[f.kind] || ""),
+          detail: f.model || (f.kind === "cmdc" ? "跟随 Command Code 默认" : "跟随 Codex 默认"), ready: true };
         if (s.editing === "new") list.push(Object.assign(m, { id: "m" + Date.now().toString(36) }));
         else Object.assign(list.find((x) => x.id === s.editing), m);
         s.editing = null; s.form = null;

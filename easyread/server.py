@@ -168,7 +168,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/engines":
             cfg = config.load()
             found = detect.detect(cfg, fresh=parse_qs(url.query).get("fresh") == ["1"])
-            return self._json(200, {"found": found, "ready": detect.ready(cfg, found), "engine": cfg.get("engine"), "models": cli_models.listing()})
+            return self._json(200, {"found": found, "ready": detect.ready(cfg, found), "engine": cfg.get("engine"), "models": cli_models.listing(cfg)})
         if path == "/api/prefs":
             return self._json(200, prefs.load())
         if path == "/api/chat/models":

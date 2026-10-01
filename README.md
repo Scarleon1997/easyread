@@ -8,6 +8,16 @@
 
 <p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
 
+> [!IMPORTANT]
+> **本仓库是为 [Command Code](https://commandcode.ai/docs)（`cmdc`）定制的分支**，在原版基础上把 cmdc 接成一等引擎：
+>
+> - **翻译引擎**：设置 → 翻译引擎新增 **Command Code** 卡片。走 `cmdc -p` 无头模式，不用 API Key，直接用你已登录账号的额度；和 Claude Code 一样自己读原页图核对公式、表格和双栏阅读顺序。
+> - **模型随便挑**：名单来自 `cmdc --list-models`（含各家开源和闭源模型），也可以留空跟随 cmdc 默认模型。
+> - **问 AI**：右侧对话面板可以把 **Command Code** 加为模型来源，回答带 Read 能力，能直接翻当前论文的 `paper.json`。
+> - **共读技能**：[`skill/paper-reading/SKILL.md`](skill/paper-reading/SKILL.md) 放进 `~/.commandcode/skills/`，cmdc 就能读你的笔记和提问、把回答写到页边、亲自翻译或重译某几页。
+>
+> 原版项目：[Edwardxlai/easyread](https://github.com/Edwardxlai/easyread)（MIT）。
+
 <p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ 在线试读一篇</b></a> · <a href="https://edwardxlai.github.io/easyread/">项目主页</a> · <a href="https://github.com/Edwardxlai/easyread/releases/latest">下载</a></p>
 
 <p align="center">
@@ -41,6 +51,7 @@
 |---|---|---|
 | **Claude Code**（推荐） | 装好并登录 [Claude Code](https://docs.claude.com/en/docs/claude-code/setup) | 不用 Key，用你订阅的额度；会自己看原页图核对公式，译文最好 |
 | **Codex CLI** | 装好并登录 [Codex](https://github.com/openai/codex) | 不用 Key，用 ChatGPT 账号 |
+| **Command Code** | 装好并登录 [Command Code](https://commandcode.ai/docs)（`npm i -g command-code`，运行一次 `cmdc`） | 不用 Key，用你 Command Code 账号的额度；会自己看原页图核对公式 |
 | **API 接口 · 国内直连**：DeepSeek / 智谱 / 阿里云百炼 / Kimi / 硅基流动 / 魔搭 | API Key | 智谱 GLM-4.7-Flash、硅基流动小模型免费；DeepSeek 一篇 20 页论文几毛钱 |
 | **API 接口 · 海外（要梯子）**：OpenAI / Anthropic / Gemini / OpenRouter / Groq / Cerebras | API Key | Gemini、OpenRouter、Groq、Cerebras 有免费额度 |
 | **API 接口 · 本机**：Ollama / LM Studio | 本机装 [Ollama](https://ollama.com) 或 [LM Studio](https://lmstudio.ai) | 完全离线、免费，推荐 qwen3.5:9b（显卡小用 4b） |
@@ -112,7 +123,7 @@ npm run dist
 
 ## 和 AI agent 一起读
 
-EasyRead 自带命令行，Claude Code / Codex 这类 agent 可以在对话里直接读你的笔记和问题、把回答写到对应段落旁边，也可以亲自翻译或重译某几页。技能说明在 [`skill/paper-reading/SKILL.md`](skill/paper-reading/SKILL.md)，把这个目录放进 `~/.claude/skills/` 或 `~/.codex/skills/` 即可。
+EasyRead 自带命令行，Claude Code / Codex / Command Code 这类 agent 可以在对话里直接读你的笔记和问题、把回答写到对应段落旁边，也可以亲自翻译或重译某几页。技能说明在 [`skill/paper-reading/SKILL.md`](skill/paper-reading/SKILL.md)，把这个目录放进 `~/.claude/skills/`、`~/.codex/skills/` 或 `~/.commandcode/skills/` 即可。
 
 ```bash
 easyread list                          # 列出文献库

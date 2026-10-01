@@ -10,7 +10,7 @@
       '<div class="help-cols"><div><h4>文献库</h4><table class="keys">' +
       K("/", "搜索") + K("J K", "上下移动") + K("Enter", "打开阅读") + K("S", "星标") + K("Ctrl+V", "粘贴链接直接导入") + K("?", "这个帮助") +
       "</table><h4>导入</h4><p class=\"hint\">拖 PDF 进窗口；或填 arXiv 编号、DOI、论文标题、论文网页（arXiv、OpenReview、ACL、NeurIPS、bioRxiv、PMC、期刊页面）或 PDF 直链。找不到公开 PDF 的，下载后拖进来。长论文可以只译正文。</p>" +
-      "<h4>翻译引擎</h4><p class=\"hint\">本机装了 Claude Code 或 Codex 就能直接用，不用 Key；也可以用 DeepSeek、智谱、通义、Gemini 等 API，或本机 Ollama。在设置里换。</p></div>" +
+      "<h4>翻译引擎</h4><p class=\"hint\">本机装了 Claude Code、Codex 或 Command Code 就能直接用，不用 Key；也可以用 DeepSeek、智谱、通义、Gemini 等 API，或本机 Ollama。在设置里换。</p></div>" +
       '<div><h4>阅读页</h4><table class="keys">' +
       K("J K", "下一段 / 上一段") + K("N Q", "给当前段写笔记 / 提问") + K("A", "问 AI（带当前段）") + K("E", "改译文") + K("R", "让模型重译这段") +
       K("B", "译文 / 对照原文") + K("O", "原文页面板") + K("M", "笔记面板") + K("T", "目录") + K("= - 0", "字号大 / 小 / 默认") + K("1 2 3 4", "选中文字后四色划线") +

@@ -98,8 +98,10 @@
     const model = PR.cliModelSelect(st, name, c.model, 'data-k="' + name + '.model"', true);  // 选项见 settings-models.js
     const how = name === "claude"
       ? '还没装？<a href="https://docs.claude.com/en/docs/claude-code/setup" target="_blank" rel="noopener">安装 Claude Code</a>，在终端里运行一次 <code>claude</code> 登录。翻译用的是你订阅里的额度。Opus / Sonnet 自动用 Claude Code 支持的最新版；要用刚出的新模型，先运行 <code>claude update</code>。'
-      : (PR.cliModelDesc(st, "codex", c.model) ? PR.esc(PR.cliModelDesc(st, "codex", c.model)) + "<br>" : "") +
-        '名单和 Codex 里 <code>/model</code> 看到的一样。还没装或要更新：<code>npm i -g @openai/codex@latest</code>，装好后运行一次 <code>codex</code> 登录。';
+      : name === "cmdc"
+        ? '用你 Command Code 登录里的额度，不用 Key；会自己读原页图核对公式。还没装：<code>npm i -g command-code</code>，在终端里运行一次 <code>cmdc</code> 登录。名单来自 <code>cmdc --list-models</code>，留空跟随默认。'
+        : (PR.cliModelDesc(st, "codex", c.model) ? PR.esc(PR.cliModelDesc(st, "codex", c.model)) + "<br>" : "") +
+          '名单和 Codex 里 <code>/model</code> 看到的一样。还没装或要更新：<code>npm i -g @openai/codex@latest</code>，装好后运行一次 <code>codex</code> 登录。';
     return '<div class="grid2"><label class="field"><span>模型</span>' + model + "</label>" +
       '<label class="field"><span>命令</span><input class="input" data-k="' + name + '.command" value="' + PR.esc(c.command) + '"></label></div><p class="hint">' + how + "</p>";
   }
@@ -113,11 +115,12 @@
       const c = state.cfg, o = c.openai;
       return { engine: c.engine, batch_pages: c.batch_pages, concurrency: c.concurrency, auto_translate: c.auto_translate,
         claude: { model: c.claude.model, command: c.claude.command }, codex: { model: c.codex.model, command: c.codex.command },
+        cmdc: { model: c.cmdc.model, command: c.cmdc.command },
         openai: { preset: o.preset, base_url: o.base_url, api: o.api, model: o.model, api_key: o.api_key, vision: o.vision } };
     }
     const o = state.cfg.openai;
     if (state.cfg.engine === "openai") PR.apiForm.read(dlg(), o, "api_key");
-    const patch = { engine: state.cfg.engine, claude: {}, codex: {},
+    const patch = { engine: state.cfg.engine, claude: {}, codex: {}, cmdc: {},
       openai: { preset: o.preset, base_url: o.base_url, api: o.api, model: o.model, api_key: o.api_key, vision: o.vision } };
     PR.$$("[data-k]", dlg()).forEach((el) => {
       const [a, b] = el.dataset.k.split(".");
@@ -135,8 +138,9 @@
       let h = '<p class="set-lead">导入论文后，用哪个模型在后台把它译成中文。</p><div class="engine-cards">' +
         card("claude", "Claude Code", "本机已登录的 Claude，不用 Key。会看原页图核对公式，译得最好。", badge("claude")) +
         card("codex", "Codex CLI", "本机已登录的 Codex（ChatGPT 账号），不用 Key。", badge("codex")) +
+        card("cmdc", "Command Code", "本机已登录的 Command Code，不用 Key。会看原页图核对公式。", badge("cmdc")) +
         card("openai", "API 接口", "填 Key 用 DeepSeek、智谱、通义、OpenAI 等；或本机 Ollama、任意自定义地址。", '<span class="badge ok">有免费的</span>') + "</div>";
-      if (e === "claude" || e === "codex") h += cliFields(e);
+      if (e === "claude" || e === "codex" || e === "cmdc") h += cliFields(e);
       else if (e === "openai") h += apiFields();
       return h + '<div class="test-line"><button class="btn sm line" id="testBtn">' + PR.icon("sparkle", "sm") + '试译一句</button><span class="test-result" id="testRes"></span></div>' +
         '<div class="settings-sec grid2">' +
@@ -152,7 +156,8 @@
     sync(s) {
       const p = collect(s);
       Object.assign(s.cfg, { engine: p.engine, batch_pages: p.batch_pages ?? s.cfg.batch_pages, concurrency: p.concurrency ?? s.cfg.concurrency, auto_translate: p.auto_translate ?? s.cfg.auto_translate,
-        claude: Object.assign({}, s.cfg.claude, p.claude), codex: Object.assign({}, s.cfg.codex, p.codex), openai: Object.assign({}, s.cfg.openai, p.openai) });
+        claude: Object.assign({}, s.cfg.claude, p.claude), codex: Object.assign({}, s.cfg.codex, p.codex),
+        cmdc: Object.assign({}, s.cfg.cmdc, p.cmdc), openai: Object.assign({}, s.cfg.openai, p.openai) });
     },
     async click(e, s) {
       const card = e.target.closest("[data-engine]");
