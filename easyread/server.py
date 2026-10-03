@@ -142,9 +142,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self._get()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            log.info("客户端提前断开（刷新或关掉了页面）：%s", self.path)
         except Exception as e:  # noqa: BLE001
             log.exception("请求出错 %s", self.path)
-            self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            try:
+                self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+                pass  # 500 也没送出去：连接已经断了，没什么可补的
 
     def _get(self):
         url = urlparse(self.path)
@@ -222,9 +227,14 @@ class Handler(BaseHTTPRequestHandler):
             self._post()
         except (ValueError, KeyError) as e:
             self._json(400, {"error": str(e)})
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            log.info("客户端提前断开：%s", self.path)
         except Exception as e:  # noqa: BLE001
             log.exception("请求出错 %s", self.path)
-            self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            try:
+                self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+                pass
 
     def _post(self):
         url = urlparse(self.path)
@@ -369,6 +379,7 @@ def serve(port: int | None = None, open_browser: bool = False, path: str = "/"):
     app = App(cfg)
     Handler.app = app
     detect.warm(cfg)
+    threading.Thread(target=cli_models.listing, args=(cfg,), daemon=True).start()  # 后台预热模型名单，首个 /api/engines 不用等 cmdc --list-models
     port = cfg["port"] if port is None else port
     try:
         httpd = _Server(("127.0.0.1", port), Handler)
