@@ -93,9 +93,11 @@ def ensure(ws) -> dict[str, list[dict]]:
     except Exception:  # An unreadable annotation must not block reading or translation.
         from ..app.log import log
         log.exception("Could not extract PDF links: %s", source.name)
-        return {}
     cache.parent.mkdir(parents=True, exist_ok=True)
-    write_json_atomic(cache, {"source": identity, "pages": pages})
+    try:
+        write_json_atomic(cache, {"source": identity, "pages": pages})
+    except OSError:
+        pass
     return pages
 
 

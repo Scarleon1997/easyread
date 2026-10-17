@@ -69,7 +69,25 @@ def run(engine: str, c: dict, prompt: str, cwd: Path, cancel=None, meter=None) -
             Path(file).unlink(missing_ok=True)
     elif engine == "agy":
         line = json.dumps({"event": "user", "message": {"content": prompt}}, ensure_ascii=False) + "\n"
-        out = engines._communicate(engines._popen(args, cwd), line, timeout, cancel)
+        proc = engines._popen(args, cwd)
+        proc.stdin.write(line)
+        proc.stdin.flush()
+        lines = []
+        try:
+            for out_line in proc.stdout:
+                lines.append(out_line)
+                if '"event":"result"' in out_line:
+                    break
+        finally:
+            try:
+                proc.stdin.close()
+            except OSError:
+                pass
+            try:
+                proc.wait(timeout=10)
+            except Exception:
+                proc.kill()
+        out = "".join(lines)
     else:
         out = engines._communicate(engines._popen(args, cwd), prompt, timeout, cancel)
     text, err, used = parse(engine, out)
@@ -89,7 +107,7 @@ def build_args(engine: str, c: dict) -> list[str]:
                 "--disable-web-search", "--reasoning-effort", effort if effort in SPECS["grok"]["efforts"] else "low"]
         args += ["--model", model] if model else []
     elif engine == "agy":
-        args = ["--input-format", "stream-json", "--output-format", "stream-json"] + (["--model", model] if model else [])
+        args = ["--input-format", "stream-json", "--output-format", "stream-json", "--dangerously-skip-permissions"] + (["--model", model] if model else [])
         if effort in SPECS["agy"]["efforts"]:
             args += ["--effort", effort]
     elif engine == "cmdc":
