@@ -20,6 +20,7 @@ import json
 import os
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
 from ..app.i18n import tr
@@ -73,20 +74,28 @@ def run(engine: str, c: dict, prompt: str, cwd: Path, cancel=None, meter=None) -
         proc.stdin.write(line)
         proc.stdin.flush()
         lines = []
-        try:
-            for out_line in proc.stdout:
-                lines.append(out_line)
-                if '"event":"result"' in out_line:
-                    break
-        finally:
-            try:
-                proc.stdin.close()
-            except OSError:
-                pass
-            try:
-                proc.wait(timeout=10)
-            except Exception:
+        started = time.time()
+        while True:
+            if cancel is not None and cancel.is_set():
                 proc.kill()
+                raise engines.Cancelled()
+            if time.time() - started > timeout:
+                proc.kill()
+                raise engines.EngineError(tr("超过 {n} 秒没有结果", n=timeout))
+            out_line = proc.stdout.readline()
+            if not out_line:
+                break
+            lines.append(out_line)
+            if '"event":"result"' in out_line:
+                break
+        try:
+            proc.stdin.close()
+        except OSError:
+            pass
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
         out = "".join(lines)
     else:
         out = engines._communicate(engines._popen(args, cwd), prompt, timeout, cancel)
