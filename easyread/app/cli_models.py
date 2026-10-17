@@ -108,8 +108,41 @@ def _probe(exe: str, version: str) -> None:
     chat_models.remember("_claude_version", version)
 
 
-def listing() -> dict:
-    return {"claude": claude(), "codex": codex()}
+_CMDC_CACHE: dict = {"at": 0.0, "data": {"default": "", "models": []}}
+_CMDC_LINE = re.compile(r"^(\S+)\s{2,}(\S.*)$")
+
+
+def cmdc(c: dict | None = None) -> dict:
+    """{"default": slug, "models": [{"id", "name", "desc"}]}：cmdc --list-models 的名单，缓存 10 分钟；没装就是空名单。"""
+    import time
+    import subprocess
+    if time.time() - _CMDC_CACHE["at"] < 600:
+        return _CMDC_CACHE["data"]
+    out: dict = {"default": "", "models": []}
+    exe = engines.cli_path("cmdc", c or {})
+    if exe:
+        try:
+            r = subprocess.run([exe, "--list-models"], capture_output=True, text=True, timeout=20, stdin=subprocess.DEVNULL,
+                               encoding="utf-8", errors="replace", creationflags=engines._NO_WINDOW)
+            for line in (r.stdout or "").splitlines():
+                if line.startswith(("Pass the full id", "Docs:")):
+                    break
+                m = _CMDC_LINE.match(line)
+                if not m or m.group(1) == "Available":
+                    continue
+                desc = m.group(2)
+                if desc.endswith("(default)"):
+                    out["default"] = m.group(1)
+                    desc = desc[:-len("(default)")].rstrip()
+                out["models"].append({"id": m.group(1), "name": m.group(1), "desc": desc})
+        except (OSError, subprocess.SubprocessError):
+            log.info("cmdc --list-models 失败", exc_info=True)
+    _CMDC_CACHE.update(at=time.time(), data=out)
+    return out
+
+
+def listing(cfg: dict | None = None) -> dict:
+    return {"claude": claude(), "codex": codex(), "cmdc": cmdc((cfg or {}).get("cmdc"))}
 
 
 def engine_label(cfg: dict) -> str:

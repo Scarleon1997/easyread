@@ -3,7 +3,7 @@
   "use strict";
   const L = PR.lib;
   const dlg = PR.$("#importDlg");
-  const SCOPES = [["all", PR.t("全文")], ["body", PR.t("正文（到参考文献为止）")], ["range", PR.t("指定页")]];
+  const SCOPES = [["all", PR.t("全文")], ["preview", PR.t("精读速览（摘要+结论）")], ["body", PR.t("正文（到参考文献为止）")], ["range", PR.t("指定页")]];
   // 导入后做什么：翻译成中文 / 只读英文原文（模型把版面排好，不翻译）/ 只放原页图
   const AFTER = [["translate", PR.t("翻译成"), PR.t("后台逐页翻译，随时对照原文；译成哪种语言在右边选")],
     ["read", PR.t("读英文原文"), PR.t("不翻译：模型只把公式、表格、段落排好，正文就是英文，比翻译省用量；想看译文了随时点“翻译成{lang}”", { lang: PR.targetName(PR.target) })],

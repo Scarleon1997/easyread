@@ -8,6 +8,7 @@
     grok: { name: "Grok Build", url: "https://x.ai/cli", efforts: ["low", "medium", "high"] },
     agy: { name: "Antigravity CLI", url: "https://antigravity.google/docs/cli", efforts: ["low", "medium", "high", "xhigh", "max"] },
     cursor: { name: "Cursor CLI", url: "https://cursor.com/docs/cli/installation", efforts: [] },
+    cmdc: { name: "Command Code", url: "https://commandcode.ai/docs", efforts: [] },
     codebuddy: { name: "CodeBuddy CLI", url: "https://www.codebuddy.cn/docs/cli/headless", efforts: [],
       hint: PR.t("WorkBuddy 与 CodeBuddy 共用同账号积分；当前免费体验版不含 CLI 访问，需标准版及以上"),
       setup: PR.t("安装并登录 CodeBuddy CLI") },

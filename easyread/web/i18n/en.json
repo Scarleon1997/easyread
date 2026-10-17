@@ -1,4 +1,11 @@
 {
+  "精读速览（摘要+结论）": "Quick Preview (Abstract + Conclusion)",
+  "全文翻译": "Full Translation",
+  "只翻译首页/摘要和结论": "Translate only title/abstract and conclusion",
+  "精读速览": "Quick Preview",
+  "已开始精读速览（翻译摘要和结论）": "Quick preview started (translating abstract and conclusion)",
+  "精读速览（已译 {done} 页）": "Quick Preview ({done} pages translated)",
+  "继续翻译全文": "Continue full translation",
   "荧光笔：用上次颜色划线": "Highlight using the last color",
   "下划线：用上次颜色划线": "Underline using the last color",
   "标记已在其他地方修改，无法撤销": "This annotation changed elsewhere and cannot be undone",

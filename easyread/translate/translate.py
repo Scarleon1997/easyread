@@ -45,6 +45,9 @@ def prepare(ws: Workspace) -> None:
     ws.update("paper", apply)
 
 
+_CONCLUSION_LINE = re.compile(r"^\s*(\d+\.?\s*)?(conclusion|conclusions|concluding remarks|summary and conclusion|结语|结论)\b", re.I | re.M)  # i18n-ok
+
+
 def references_page(ws: Workspace) -> int | None:
     """参考文献从哪一页开始（找单独成行的 References 标题）。找不到返回 None。"""
     n = ws.load("paper").get("meta", {}).get("page_count") or 0
@@ -55,9 +58,38 @@ def references_page(ws: Workspace) -> int | None:
     return None
 
 
-def scope_pages(ws: Workspace, scope: str | None) -> list[int] | None:
-    """翻译范围：all 全文；body 到参考文献那页为止；range:A-B 第 A 到 B 页；first:N 前 N 页（旧写法）。返回 None 表示全文。"""
+def conclusion_pages(ws: Workspace) -> list[int]:
+    """寻找论文结论所在页码（参考文献前 1~2 页或匹配 Conclusion 标题）。"""
     n = ws.load("paper").get("meta", {}).get("page_count") or 0
+    ref_p = references_page(ws)
+    search_max = ref_p if ref_p else n
+    found = []
+    for p in range(max(1, search_max - 4), search_max + 1):
+        f = ws.root / "extract" / f"page-{p:03d}.txt"
+        if f.exists() and _CONCLUSION_LINE.search(f.read_text(encoding="utf-8", errors="replace")):
+            found.append(p)
+    if found:
+        res = set(found)
+        for p in found:
+            if p + 1 <= search_max:
+                res.add(p + 1)
+        return sorted(res)
+    if ref_p and ref_p > 1:
+        return [ref_p - 1]
+    return [n] if n > 1 else [1]
+
+
+def scope_pages(ws: Workspace, scope: str | None) -> list[int] | None:
+    """翻译范围：all 全文；preview 精读速览（首页/摘要 + 结论）；body 到参考文献那页为止；range:A-B 第 A 到 B 页；first:N 前 N 页。返回 None 表示全文。"""
+    n = ws.load("paper").get("meta", {}).get("page_count") or 0
+    if scope in ("preview", "summary"):
+        pgs = {1}
+        if n >= 2:
+            pgs.add(2)
+        for cp in conclusion_pages(ws):
+            if cp <= n:
+                pgs.add(cp)
+        return sorted(pgs)
     if scope == "body":
         ref = references_page(ws)
         return list(range(1, ref + 1)) if ref else None

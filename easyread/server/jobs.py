@@ -231,6 +231,8 @@ class Jobs:
                         message=(tr("{ok} 页好了，", ok=len(pages) - len(failed)) if len(failed) < len(pages) else "")
                         + (tr("{n} 页没整理成功", n=len(failed)) if read else tr("{n} 页没译成功", n=len(failed))))
         else:
+            if job.get("scope") in ("preview", "summary"):
+                ws.update("paper", lambda p: p.setdefault("translation", {}).__setitem__("note", tr("精读速览模式（摘要+结论）")))
             self._write(ws, state="done", failed={}, error="",
                         message=tr("原文整理完成（{n} 页，用时约 {m} 分钟）", n=len(pages), m=minutes) if read
                         else tr("翻译完成（{n} 页，用时约 {m} 分钟）", n=len(pages), m=minutes))

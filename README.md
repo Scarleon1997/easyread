@@ -8,6 +8,16 @@
 
 <p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
 
+> [!IMPORTANT]
+> **本仓库为个人定制增强版（基于官方 v1.4.3）**：
+>
+> - **两档翻译模式（精读速览 vs 全文翻译）**：支持仅翻译核心**首页/摘要 + 结论（Conclusion）**，其余页面保留高质量原页呈现，可随时在阅读中一键补译全文，大幅缩短长文等待时间并降低模型用量。
+> - **Command Code（`cmdc`）一等引擎支持**：
+>   - 在官方支持 Claude / Codex / Grok / Antigravity / Cursor 的基础上，额外集成 **Command Code** 原生调用。
+>   - 自动解析 `cmdc --list-models` 模型列表，走已登录无头运行免 Key 模式。
+>
+> 官方原版项目：[Edwardxlai/easyread](https://github.com/Edwardxlai/easyread)（MIT）。
+
 <p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ 在线试读一篇</b></a> · <a href="https://edwardxlai.github.io/easyread/">项目主页</a> · <a href="https://github.com/Edwardxlai/easyread/releases/latest">下载</a></p>
 
 <p align="center">

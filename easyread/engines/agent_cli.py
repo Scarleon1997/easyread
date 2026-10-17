@@ -28,6 +28,7 @@ SPECS = {
     "grok": {"name": "Grok Build", "commands": ("grok",), "efforts": ["low", "medium", "high"]},
     "agy": {"name": "Antigravity CLI", "commands": ("agy",), "efforts": ["low", "medium", "high", "xhigh", "max"]},
     "cursor": {"name": "Cursor CLI", "commands": ("agent", "cursor-agent"), "efforts": []},
+    "cmdc": {"name": "Command Code", "commands": ("cmdc",), "efforts": []},
 }
 ENGINES = tuple(SPECS)
 ONLY_READ = "\n\n（只用读文件的工具看上面提到的图片或文件；不要运行命令、不要搜索、不要打开别的文件。看完直接输出最终结果。）"  # i18n-ok 提示词
@@ -91,6 +92,8 @@ def build_args(engine: str, c: dict) -> list[str]:
         args = ["--input-format", "stream-json", "--output-format", "stream-json"] + (["--model", model] if model else [])
         if effort in SPECS["agy"]["efforts"]:
             args += ["--effort", effort]
+    elif engine == "cmdc":
+        args = ["-p", "--output-format", "json", "--skip-onboarding"] + (["--model", model] if model else [])
     else:
         args = ["-p", "--output-format", "json", "--trust", "--mode", "ask"] + (["--model", model] if model else [])
     return args + list(c.get("extra_args") or [])
@@ -106,6 +109,18 @@ def parse(engine: str, out: str) -> tuple[str, str, dict | None]:
             events = [obj] if isinstance(obj, dict) else []
         except json.JSONDecodeError:
             pass
+    if engine == "cmdc":
+        res = next((e for e in reversed(events) if e.get("type") == "result"), {})
+        if not res:
+            return "", tr("Command Code 输出里没有结果行"), None
+        if res.get("subtype") != "success":
+            msg = str(res.get("error") or res.get("subtype") or "")
+            if "max_turns" in (res.get("subtype") or "") or "turn" in msg.lower():
+                msg += tr("（对话轮数到上限了，在 config.json 的 cmdc.extra_args 里加 --max-turns 500 再试）")
+            elif "credit" in msg.lower() or "limit" in msg.lower():
+                msg += tr("（额度用完了，等恢复后点“重试”，或在设置里换个引擎）")
+            return "", msg, None
+        return str(res.get("finalText") or "").strip(), "", None
     if engine == "grok":
         res = next((e for e in reversed(events) if "text" in e or e.get("type") == "error"), None) or {}
         if res.get("type") == "error":

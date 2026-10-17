@@ -168,8 +168,9 @@
     const by = [m.authors, m.affiliation].filter(Boolean).map(PR.esc).join("　·　");
     const pages = (m.pages || []).length, done = (tr.done_pages || []).length, en = (tr.en_pages || []).length;
     const toZh = en && PR.canAsk() && !jobRunning() && (S.job || {}).state !== "confirm" ? '<button class="btn sm line" data-t="translate-en">' + PR.t("翻译成{lang}", { lang: PR.targetName((S.paper.meta || {}).target || PR.target) }) + "</button>" : "";
+    const isPreview = (S.job || {}).scope === "preview" || (tr.note && tr.note.includes(PR.t("精读速览")));
     const scope = (en ? "<b>" + PR.t("英文原文") + "</b>　" + (done - en ? PR.t("其中 {n} 页已译，", { n: done - en }) : "") + PR.t("{n} 页没有翻译", { n: en }) + toZh
-      : "<b>" + PR.t("译文") + "</b>　" + (pages ? (done >= pages ? PR.t("全文 {n} 页", { n: pages }) : PR.t("已译 {done} / {n} 页", { done, n: pages })) : PR.t("尚未处理"))) +
+      : "<b>" + PR.t("译文") + "</b>　" + (pages ? (done >= pages ? PR.t("全文 {n} 页", { n: pages }) : (isPreview ? PR.t("精读速览（已译 {done} 页）", { done }) + (PR.canAsk() && !jobRunning() ? ' · <button class="linkish" data-t="translate-rest">' + PR.t("继续翻译全文") + "</button>" : "") : PR.t("已译 {done} / {n} 页", { done, n: pages }))) : PR.t("尚未处理"))) +
       (tr.note ? "　" + PR.esc(tr.note) : "") +
       '<br><span class="reading-language-description">' + (en ? PR.t("没译的地方正文是英文原文") : PR.t("正文是译文")) + '</span>' + PR.t('；<span class="legend-agent"></span>青色细线是 AI 的解释和回答，<span class="legend-mine"></span>赭色细线是我的笔记，都不属于原文。');
     return '<header class="paper-head" id="b-head" data-id="head">' + (kicker ? '<div class="kicker">' + kicker + "</div>" : "") +
@@ -192,7 +193,7 @@
     const label = pages.length > 1 ? PR.t("第 {a}–{b} 页", { a: pages[0].n, b: pages[pages.length - 1].n }) : PR.t("第 {n} 页", { n: pages[0].n });
     const head = bad.length ? (reading() ? PR.t("{label}没整理成功：", { label }) : PR.t("{label}没译成功：", { label })) + PR.esc(failed[bad[0].n]) + (PR.canAsk() && !running ? '<button class="btn sm line" data-t="retry-failed">' + PR.t("重试") + "</button>" : "")
       : running ? (reading() ? PR.t("{label}还在排队整理，先放原页。", { label }) : PR.t("{label}还在排队翻译，先放原页。", { label }))
-      : reading() ? PR.t("{label}还没整理，先放原页。", { label }) : PR.t("{label}还没有译文，先放原页。", { label });
+      : reading() ? PR.t("{label}还没整理，先放原页。", { label }) : PR.t("{label}还没有译文，先放原页。", { label }) + (PR.canAsk() && !running ? '<button class="btn sm line" data-t="translate-rest">' + PR.t("翻译剩下的页") + "</button>" : "");
     return '<div class="pending-pages gap"><div class="pending' + (bad.length ? " bad" : "") + '">' + head + "</div>" + pages.map(origFig).join("") + "</div>";
   }
 

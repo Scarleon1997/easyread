@@ -41,6 +41,7 @@ DEFAULTS = {
     "grok": {"command": "", "model": "", "reasoning_effort": "", "extra_args": [], "timeout": 1200},
     "agy": {"command": "", "model": "", "reasoning_effort": "", "extra_args": [], "timeout": 1200},
     "cursor": {"command": "", "model": "", "reasoning_effort": "", "extra_args": [], "timeout": 1200},
+    "cmdc": {"command": "", "model": "", "extra_args": [], "timeout": 1200},
     # api：chat（/chat/completions）| responses（/responses），见 openai_api.py
     "openai": {"preset": "", "base_url": "", "api": "chat", "api_key": "", "model": "", "vision": False, "timeout": 600},
     # 阅读页右侧“问 AI”的模型名单和默认模型，见 chat_models.py
